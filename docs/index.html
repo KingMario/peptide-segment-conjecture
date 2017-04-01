@@ -1,0 +1,165 @@
+<html>
+
+<head>
+  <meta name="keywords" content="peptide,molecular,weight,segment,fragment,degradation,mass">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>Peptide Segment Conjecture - Powered by Mario Studio</title>
+  <link rel="stylesheet" type="text/css" href="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.10.0/themes/redmond/jquery-ui.css"></link>
+  <style>
+  #CopyrightInfo {
+    font: 62.5% "Trebuchet MS", sans-serif;
+  }
+  </style>
+</head>
+
+<body style="background-color:#F0F0F0; background-image: url(images/background.gif); background-repeat: no-repeat">
+  <h1>Peptide Segment Conjecture</h1>
+  <table>
+    <tr>
+      <td align="right">Peptide Sequence:</td>
+      <td>
+        <input id="PeptideSequence" style="width:400px"> Molecular Weight:
+        <input id="MolecularWeight" readonly style="width:80px; text-align:right; background-color: transparent">
+      </td>
+    </tr>
+    <tr>
+      <td align="right">Segment Molecular Weight: </td>
+      <td>
+        <input id="SegmentMolecularWeight" style="width:100px; text-align:right" value="1449.2400">±
+        <input id="Millesimal" style="width:20px; text-align:right" value="1">‰</td>
+    </tr>
+    <tr>
+      <td align="right" valign="top">All Segments:</td>
+      <td>
+        <textarea id="AllSegmentConjectures" style="width:600px; height:200px; background-color: transparent" readonly></textarea>
+      </td>
+    </tr>
+    <tr>
+      <td align="right" valign="top">Possible Segment Conjecture(s):</td>
+      <td>
+        <textarea id="PossibleSegmentConjectures" style="width:600px; height:100px; background-color: transparent" readonly></textarea>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="right">
+        <input type="submit" id="Calculate" value="Calculate" style="background-color: transparent">
+      </td>
+    </tr>
+  </table>
+  <span id="CopyrightInfo">&copy; Mario Studio, 2013. All rights reserved.</span>
+  <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.min.js"></script>
+  <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.10.0/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="js/jquery.alphanum.js"></script>
+  <script type="text/javascript" src="js/map.js"></script>
+  <script type="text/javascript">
+  $('#PeptideSequence').alpha();
+  $('#MolecularWeight').numeric({
+    maxPreDecimalPlaces: 5,
+    maxDecimalPlaces: 4
+  });
+  $('#SegmentMolecularWeight').numeric({
+    maxPreDecimalPlaces: 5,
+    maxDecimalPlaces: 4
+  });
+  $('#Millesimal').numeric({
+    maxPreDecimalPlaces: 2,
+    maxDecimalPlaces: 0
+  });
+  $('#Calculate').click(Calculate);
+
+  var m_mapAminoAcidResidueNolecularWeight = new Map();
+  m_mapAminoAcidResidueNolecularWeight.put('A', 71.0788);
+  m_mapAminoAcidResidueNolecularWeight.put('B', 111.1002);
+  m_mapAminoAcidResidueNolecularWeight.put('C', 103.1388);
+  m_mapAminoAcidResidueNolecularWeight.put('D', 115.0886);
+  m_mapAminoAcidResidueNolecularWeight.put('E', 129.1155);
+  m_mapAminoAcidResidueNolecularWeight.put('F', 147.1766);
+  m_mapAminoAcidResidueNolecularWeight.put('G', 57.0519);
+  m_mapAminoAcidResidueNolecularWeight.put('H', 137.1411);
+  m_mapAminoAcidResidueNolecularWeight.put('I', 113.1594);
+  m_mapAminoAcidResidueNolecularWeight.put('J', 173.0324);
+  m_mapAminoAcidResidueNolecularWeight.put('K', 128.1741);
+  m_mapAminoAcidResidueNolecularWeight.put('L', 113.1594);
+  m_mapAminoAcidResidueNolecularWeight.put('M', 131.1926);
+  m_mapAminoAcidResidueNolecularWeight.put('N', 114.1038);
+  m_mapAminoAcidResidueNolecularWeight.put('P', 97.1167);
+  m_mapAminoAcidResidueNolecularWeight.put('Q', 128.1307);
+  m_mapAminoAcidResidueNolecularWeight.put('R', 156.1875);
+  m_mapAminoAcidResidueNolecularWeight.put('S', 87.0782);
+  m_mapAminoAcidResidueNolecularWeight.put('T', 101.1051);
+  m_mapAminoAcidResidueNolecularWeight.put('U', 113.1595);
+  m_mapAminoAcidResidueNolecularWeight.put('V', 99.1326);
+  m_mapAminoAcidResidueNolecularWeight.put('W', 186.2132);
+  m_mapAminoAcidResidueNolecularWeight.put('X', 113.1161);
+  m_mapAminoAcidResidueNolecularWeight.put('Y', 163.176);
+  m_mapAminoAcidResidueNolecularWeight.put('Z', 103.1448);
+
+  function Calculate() {
+    var PeptideSequence = $('#PeptideSequence').val();
+    var SegmentMolecularWeight = $('#SegmentMolecularWeight').val();
+    var Millesimal = $('#Millesimal').val();
+
+    $("#AllSegmentConjectures").val("");
+    $("#PossibleSegmentConjectures").val("");
+
+    PeptideSequence = PeptideSequence.toUpperCase();
+    PeptideSequence = PeptideSequence.replace(/ /g, '');
+
+    var i, j;
+    var m_dblTmpSegmentMolecularWeight;
+    var m_strSegment;
+    var m_mapSegmentConjectureNolecularWeight = new Map();
+    for (i = 0; i < PeptideSequence.length; i++) {
+      var theWeight = m_mapAminoAcidResidueNolecularWeight.get(PeptideSequence.substr(i, 1));
+      if (null == theWeight) {
+        alert('Invalid peptide sequence.');
+        return;
+      }
+
+      m_dblTmpSegmentMolecularWeight = theWeight;
+      for (j = i + 1; j < PeptideSequence.length; j++) {
+        m_strSegment = PeptideSequence.substr(i, j - i + 1);
+        var theWeight = m_mapAminoAcidResidueNolecularWeight.get(PeptideSequence.substr(j, 1));
+        if (null == theWeight) {
+          alert('Invalid peptide sequence.');
+          return;
+        }
+
+        m_dblTmpSegmentMolecularWeight += theWeight;
+        if (null != m_mapSegmentConjectureNolecularWeight.get(m_dblTmpSegmentMolecularWeight + 18)) {
+          m_dblTmpSegmentMolecularWeight += 0.00001;
+        }
+        m_mapSegmentConjectureNolecularWeight.put(m_dblTmpSegmentMolecularWeight + 18, m_strSegment);
+      }
+    }
+
+    m_mapSegmentConjectureNolecularWeight.SortNumber(false);
+
+    var AllSegmentConjecturesStr = '';
+    var PossibleSegmentConjecturesStr = '';
+    var tmpStr;
+    var MolecularWeight = 0;
+    m_mapSegmentConjectureNolecularWeight.each(function(key, value, index) {
+      if (0 == MolecularWeight) {
+        MolecularWeight = Math.round((key) * 10000) / 10000;
+      }
+      tmpStr = value + ": " + Math.round((key) * 10000) / 10000;
+      if (tmpStr.indexOf('.') != tmpStr.length - 5) {
+        tmpStr += '0';
+      }
+      tmpStr += "\n";
+      AllSegmentConjecturesStr += tmpStr;
+      if ((key >= SegmentMolecularWeight * (1 - Millesimal / 1000)) && (key <= SegmentMolecularWeight * (1 + Millesimal / 1000))) {
+        PossibleSegmentConjecturesStr += tmpStr;
+      }
+    });
+
+    $("#MolecularWeight").val(MolecularWeight);
+    $("#AllSegmentConjectures").val(AllSegmentConjecturesStr);
+    $("#PossibleSegmentConjectures").val(PossibleSegmentConjecturesStr);
+  }
+  </script>
+</body>
+
+</html>
